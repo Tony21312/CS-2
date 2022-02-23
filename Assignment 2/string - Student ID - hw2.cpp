@@ -276,43 +276,14 @@ void string::resize( const size_type newSize, const char ch )
             size_type newMyRes = myRes * 3 / 2;
             if (newMyRes < (newSize / 16) * 16 + 15)
                 newMyRes = (newSize / 16) * 16 + 15;
-            if (newSize < 16)
-            {
-                value_type* tempPtr = bx.buf;
-                bx.ptr = new value_type[newMyRes]();
-                for (int n = 0; n < mySize; n++)
-                    bx.ptr[n] = tempPtr[n];
-                delete[] tempPtr;
-                for (int n = mySize; n < newSize; n++)
-                    bx.ptr[n] = ch;
-            }
-            else
-            {
-                if (mySize < 16)
-                {
-                    
-                    bx.ptr = new value_type[newMyRes]();
-                    for (int n = 0; n < 16; n++)
-                    {
-                        bx.ptr[n] = bx.buf[n];
-                        cout << bx.ptr[n] << "  " << bx.buf[n] << '\n';
-                    }
-                }
-                else
-                {
-                    value_type* tempPtr = bx.ptr;
 
-                    bx.ptr = new value_type[newMyRes]();
-                    for (int n = 0; n < mySize; n++)
-                        bx.ptr[n] = tempPtr[n];
-                    delete[] tempPtr;
-                }
-                    
-                for (int n = mySize; n < newSize; n++)
-                    bx.ptr[n] = ch;
-            }
-
-            
+            value_type* tempPtr = bx.ptr;//11
+            bx.ptr = new value_type[newMyRes]();//21
+            for (int n = 0; n < mySize; n++)//congrates
+                bx.ptr[n] = tempPtr[n];
+            delete[] tempPtr;
+            for (int n = mySize; n < newSize; n++)
+                 bx.ptr[n] = ch;
             
             myRes = newMyRes;
         }
@@ -334,7 +305,7 @@ void string::resize( const size_type newSize, const char ch )
                     bx.ptr[n] = ch;
             }
         }
-            
+
     }
 
     mySize = newSize;
