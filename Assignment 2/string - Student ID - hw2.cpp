@@ -16,26 +16,13 @@ string::string( const char *const ptr, const size_type count )
      mySize( 0 ),
      myRes( 15 )
 {
-    if (count < 16)
-    {
-        mySize = count;
-        for (int n = 0; n < count; n++)
-            bx.buf[n] = ptr[n];
-        bx.buf[count] = '\0';
-    }
-    else
-    {
-        mySize = count;
-        
-        while (myRes < count)//undone
-            myRes += 16;
-        
-        bx.ptr = new value_type[myRes]();
-        for (int n = 0; n < count; n++)
-            bx.ptr[n] = ptr[n];
-        if (count != myRes)
-            bx.ptr[count] = '\0';
-    }
+    mySize = count;
+    myRes = (mySize / 16) * 16 + 15;
+    if (myRes > 15)
+        bx.ptr = new value_type[myRes + 1]();
+    for (int n = 0; n < count; n++)
+        myPtr()[n] = ptr[n];
+    myPtr()[count] = '\0';
 }
 
 string::string( const size_type count, const char ch )
@@ -43,25 +30,19 @@ string::string( const size_type count, const char ch )
      mySize( 0 ),
      myRes( 15 )
 {
-    if (count < 16)
+    // construct from count * ch
+    mySize = count;
+    if (count > 15)
     {
-        mySize = count;
-        for (int n = 0; n < count; n++)
-            bx.buf[n] = ch;
-        bx.buf[count] = '\0';
+        myRes = (mySize / 16) * 16 + 15;
+        bx.ptr = new value_type[myRes + 1]();
     }
-    else
-    {
-        mySize = count;
-        while (myRes < count)//undone
-            myRes += 16;
-        
-        bx.ptr = new value_type[myRes]();
-        for (int n = 0; n < count; n++)
-            bx.ptr[n] = ch;
-        if (count != myRes)
-            bx.ptr[count] = '\0';
-    }
+    
+    for (int n = 0; n < count; n++)
+        myPtr()[n] = ch;
+
+    myPtr()[count] = '\0';
+    
 }
 
 string::string( const string &right )
@@ -69,25 +50,13 @@ string::string( const string &right )
      mySize( 0 ),
      myRes( 15 )
 {
-    if (right.size() < 16)
-    {
-        mySize = right.size();
-        for (int n = 0; n < right.size(); n++)
-            bx.buf[n] = right.at(n);
-        bx.buf[right.size()] = '\0';
-    }
-    else
-    {
-        mySize = right.size();
-        while (myRes < right.size())
-            myRes += 16;        
-        
-        bx.ptr = new value_type[myRes]();
-        for (int n = 0; n < right.size(); n++)
-            bx.ptr[n] = right.at(n);
-        if(right.size() != myRes)
-            bx.ptr[right.size()] = '\0';
-    }
+    mySize = right.mySize;
+    myRes = (mySize / 16) * 16 + 15;
+    if(myRes > 15)
+        bx.ptr = new value_type[myRes + 1]();
+    for (int n = 0; n < right.mySize; n++)
+        myPtr()[n] = right.at(n);
+    mySize = right.mySize;
 }
 
 string::~string()
@@ -114,46 +83,32 @@ const string::value_type* string::myPtr() const
 
 string& string::assign( const string &right )
 {
-   if( this != &right )
-   {
-       if (right.mySize > myRes)
-       {
-           myRes = myRes * 3 / 2;
-           if (myRes < (right.mySize / 16) * 16 + 15)
-               myRes = (right.mySize / 16) * 16 + 15;
+    if (this != &right)
+    {
+        if (right.mySize > myRes)
+        {
+            if (myRes > 15)
+                delete[] bx.ptr;
+            myRes = myRes * 3 / 2;
+            if (myRes < (right.mySize / 16) * 16 + 15)
+                myRes = (right.mySize / 16) * 16 + 15;
+            
+            bx.ptr = new value_type[myRes + 1]();
+        }
+        
+        for (int n = 0; n < right.mySize; n++)
+            myPtr()[n] = right.myPtr()[n];
+        myPtr()[right.size()] = '\0';
+        mySize = right.mySize;
+    }
 
-           delete[]bx.ptr;
-           bx.ptr = new value_type[myRes]();
-           for (int n = 0; n < right.size(); n++)
-               bx.ptr[n] = right.at(n);
-           if (right.size() != myRes)
-               bx.ptr[right.size()] = '\0';
-       }
-       else
-       {
-           if (right.mySize < 16)
-           {
-               for (int n = 0; n < right.size(); n++)
-                   bx.buf[n] = right.at(n);
-               bx.buf[right.size()] = '\0';
-           }
-           else
-           {
-               for (int n = 0; n < right.size(); n++)
-                   bx.ptr[n] = right.at(n);
-               bx.ptr[right.size()] = '\0';
-           }
-       }
-       mySize = right.size();
-   }
-
-   return *this;
+    return *this;
 }
 
 bool string::equal( const string &right )
 {
-/*    if (capacity() != right.capacity())
-        return false;*/
+    if (capacity() != right.capacity())
+        return false;
 
     if (size() != right.size())
         return false;
@@ -169,8 +124,11 @@ string& string::erase( const size_type off, size_type count )
 {
    if( off < mySize )
    {
-       for (int n = off; n < count; n++)
-           at(n) = '\0';
+       int t = 0;
+       for (size_t i = off; i + count < mySize; i++) {
+           myPtr()[i] = myPtr()[i + count]; t++;
+       }
+       mySize = off + t;
    }
 
    return *this;
@@ -276,37 +234,27 @@ void string::resize( const size_type newSize, const char ch )
             size_type newMyRes = myRes * 3 / 2;
             if (newMyRes < (newSize / 16) * 16 + 15)
                 newMyRes = (newSize / 16) * 16 + 15;
+            
+            value_type* tempPtr = new value_type[newMyRes + 1]();
 
-            value_type* tempPtr = bx.ptr;//11
-            bx.ptr = new value_type[newMyRes]();//21
-            for (int n = 0; n < mySize; n++)//congrates
+            for (int n = 0; n < mySize; n++)
+                tempPtr[n] = myPtr()[n];
+
+            if (myRes > 15)
+                delete[] bx.ptr;
+            bx.ptr = new value_type[newMyRes + 1]();
+
+            for (int n = 0; n < mySize; n++)
                 bx.ptr[n] = tempPtr[n];
             delete[] tempPtr;
-            for (int n = mySize; n < newSize; n++)
-                 bx.ptr[n] = ch;
-            
-            myRes = newMyRes;
-        }
-        else
-        {
-            if (newSize < 16)
-            {
-                for (int n = mySize; n < newSize; n++)
-                    bx.buf[n] = ch;
-            }
-            else
-            {
-                value_type* tempPtr = bx.ptr;
-                bx.ptr = new value_type[myRes]();
-                for (int n = 0; n < mySize; n++)
-                    bx.ptr[n] = tempPtr[n];
-                delete[] tempPtr;
-                for (int n = mySize; n < newSize; n++)
-                    bx.ptr[n] = ch;
-            }
-        }
 
+            myRes = newMyRes;   
+        }
+        
+        for (int n = mySize; n < newSize; n++)
+            myPtr()[n] = ch;
     }
+    myPtr()[newSize] = '\0';
 
     mySize = newSize;
 }
