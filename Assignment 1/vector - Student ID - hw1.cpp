@@ -62,12 +62,14 @@ vector& vector::assign( const vector &right )
       size_type rightSize = right.myLast - right.myFirst;
       if( rightSize > capacity() )
       {
-         resize(rightSize);
+//         resize(rightSize);
           
          size_type newCapacity = capacity() * 3 / 2;
          if( newCapacity < rightSize )
             newCapacity = rightSize;
-//??         myEnd = myFirst + newCapacity;
+         delete[] myFirst;
+         myFirst = new value_type[newCapacity]();
+         myEnd = myFirst + newCapacity;
       }
       myLast = myFirst + rightSize;
       
