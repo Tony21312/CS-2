@@ -604,7 +604,7 @@ HugeInteger< T > HugeInteger< T >::operator/( HugeInteger< T > &op2 )
        buffer.divideByTen();
    }
 
-   cout << quotient << endl;
+//   cout << quotient << endl;
 
    return quotient;
 } // end function operator/
